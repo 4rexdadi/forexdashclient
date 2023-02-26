@@ -11,6 +11,7 @@ import {
   setAccDataInfo,
   setAccNumber,
   setSession,
+  setTryDemoLogin,
 } from "../../store/accInfoSlice";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
@@ -33,13 +34,13 @@ function Login({ isLoggedIn, setIsLoggedIn, logout, setLogout }) {
 
   const [accSessionId, setAccSessionId] = useState(null);
   const [accId, setAccId] = useState(null);
-  const [tryDemoLogin, setTryDemoLogin] = useState(true);
 
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
   const accInfo = useSelector((state) => state.accInfoSlice);
   const getSession = accInfo.accInfoSlice.getSession;
+  const tryDemoLogin = accInfo.accInfoSlice.tryDemoLogin;
 
   const axios = require("axios");
 
@@ -47,7 +48,7 @@ function Login({ isLoggedIn, setIsLoggedIn, logout, setLogout }) {
   const tryDemoAcc = () => {
     setPassword("demo12345");
     setEmail("beauspecial06@gmail.com");
-    setTryDemoLogin(false);
+    dispatch(setTryDemoLogin(false));
   };
 
   async function getData() {
@@ -59,9 +60,10 @@ function Login({ isLoggedIn, setIsLoggedIn, logout, setLogout }) {
         password: password,
       });
       if (res && !res.data.error) {
-        setErrors(null);
         setAccSessionId(res.data.session);
         dispatch(setSession(res.data.session));
+        setErrors(null);
+        setIsPending(false);
       } else {
         setErrors([{ header: "logIn", value: res.data.message }]);
       }
@@ -150,11 +152,10 @@ function Login({ isLoggedIn, setIsLoggedIn, logout, setLogout }) {
     try {
       const res = await axiosInstance.delete(`/deleteSession/${getSession}`);
       if (res && !res.data.error) {
-        console.log(res.data.message);
         setErrors(null);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
 
     try {
@@ -162,7 +163,6 @@ function Login({ isLoggedIn, setIsLoggedIn, logout, setLogout }) {
         `https://www.myfxbook.com/api/logout.json?session=${getSession}`
       );
       if (res && !res.data.error) {
-        console.log(res.data.message);
         setErrors(null);
       }
     } catch (error) {
@@ -192,6 +192,7 @@ function Login({ isLoggedIn, setIsLoggedIn, logout, setLogout }) {
       setLogout(true);
       setPassword("");
       setEmail("");
+      dispatch(setTryDemoLogin(true));
     }
 
     if (logout && !accSessionId) {
@@ -244,7 +245,10 @@ function Login({ isLoggedIn, setIsLoggedIn, logout, setLogout }) {
       {tryDemoLogin && (
         <>
           <motion.div layout>
-            <div className="btn" onClick={() => setTryDemoLogin(false)}>
+            <div
+              className="btn"
+              onClick={() => dispatch(setTryDemoLogin(false))}
+            >
               <p>Log in</p>
             </div>
           </motion.div>
@@ -335,7 +339,11 @@ function Login({ isLoggedIn, setIsLoggedIn, logout, setLogout }) {
                 </div>
               </div>
             )}
-            <div onClick={() => checkUser()} className="btn">
+            <div
+              style={{ pointerEvents: isPending ? "none" : "visible" }}
+              onClick={() => checkUser()}
+              className="btn"
+            >
               <p>
                 <span></span>
                 <span></span>
